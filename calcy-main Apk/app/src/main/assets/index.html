@@ -1,0 +1,2053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Jahangeer's Math Calculator</title>
+    <meta name="theme-color" content="#000000">
+    <meta name="color-scheme" content="dark">
+    <script>
+    (function () {
+        var DAY_START = 6, NIGHT_START = 18, KEY = "jahangeer_calc_theme_manual";
+        function auto(d) { var h = (d || new Date()).getHours(); return (h >= DAY_START && h < NIGHT_START) ? "light" : "dark"; }
+        function slot(d) {
+            d = d || new Date();
+            var x = new Date(d.getTime());
+            if (x.getHours() < DAY_START) x.setDate(x.getDate() - 1);
+            return x.getFullYear() + "-" + (x.getMonth() + 1) + "-" + x.getDate() + (auto(d) === "light" ? "D" : "N");
+        }
+        function resolve() {
+            try {
+                var m = JSON.parse(localStorage.getItem(KEY));
+                if (m && m.slot === slot() && (m.theme === "light" || m.theme === "dark")) return m.theme;
+            } catch (e) {}
+            return auto();
+        }
+        window.CalcTheme = { auto: auto, slot: slot, resolve: resolve, KEY: KEY };
+        document.documentElement.setAttribute("data-theme", resolve());
+    })();
+    </script>
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2300f2fe%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><rect x=%224%22 y=%222%22 width=%2216%22 height=%2220%22 rx=%222%22/><line x1=%228%22 y1=%226%22 x2=%2216%22 y2=%226%22/><line x1=%228%22 y1=%2210%22 x2=%228%22 y2=%2210%22/><line x1=%2212%22 y1=%2210%22 x2=%2212%22 y2=%2210%22/><line x1=%2216%22 y1=%2210%22 x2=%2216%22 y2=%2210%22/><line x1=%228%22 y1=%2214%22 x2=%228%22 y2=%2214%22/><line x1=%2212%22 y1=%2214%22 x2=%2212%22 y2=%2214%22/><line x1=%2216%22 y1=%2214%22 x2=%2216%22 y2=%2214%22/><line x1=%228%22 y1=%2218%22 x2=%228%22 y2=%2218%22/><line x1=%2212%22 y1=%2218%22 x2=%2216%22 y2=%2218%22/></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@600;700&family=Noto+Sans+Devanagari:wght@500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #000000;
+            --bg-gradient: none;
+            --calc-card: #000000;
+            --card-border: #e2e8f0;
+            --card-glow: rgba(0, 242, 254, 0.12);
+            --neon-cyan: #00f2fe;
+            --neon-pink: #ff007f;
+            --neon-green: #00ff87;
+            --neon-yellow: #ffdd00;
+            --sb: calc(env(safe-area-inset-top, 0px) * 0.8);
+            --text-primary: #f8fafc;
+            --text-muted: #64748b;
+            --btn-num-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
+            --btn-num-hover: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04));
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Pinch zoom / double-tap zoom off (scrolling still works) */
+        html { height: 100%; background: #000; }
+        body { background-color: #000; }
+        html, body { height: 100%; width: 100%; touch-action: pan-x pan-y; overscroll-behavior: none; }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            height: 100vh;
+            height: 100dvh;
+            width: 100%;
+            background: #000000;
+            padding: 0;
+            margin: 0;
+            overflow: hidden;
+            color: var(--text-primary);
+        }
+
+        /* ---------- Calculator shell (always fits one screen) ---------- */
+        .calculator {
+            --row-h: 22px;
+            background: var(--calc-card);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            padding: calc(var(--sb) + 12px) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+            border-radius: 0;
+            box-shadow: none;
+            border: none;
+            width: 100%;
+            max-width: none;
+            height: 100%;
+            margin: 0;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+            flex-shrink: 0;
+        }
+
+        .logo-badge {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            padding: 4px 18px;
+            border-radius: 100px;
+            border: 1px solid rgba(0, 242, 254, 0.3);
+            background: rgba(0, 242, 254, 0.05);
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.15);
+        }
+
+        .logo-text {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--neon-cyan);
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            line-height: 1;
+            text-shadow: 0 0 10px rgba(0, 242, 254, 0.5);
+        }
+
+        /* ---------- Commands panel ---------- */
+        .history-panel {
+            background: linear-gradient(145deg, #05070b, #0a0e16);
+            border-radius: 18px;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            color: #94a3b8;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.6);
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-title {
+            color: var(--text-muted);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .controls { display: flex; gap: 6px; align-items: center; }
+
+        .btn-link {
+            color: var(--neon-pink);
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            padding: 3px 10px;
+            background: rgba(255, 0, 127, 0.1);
+            border-radius: 100px;
+            border: 1px solid rgba(255, 0, 127, 0.25);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-link:hover {
+            background: rgba(255, 0, 127, 0.2);
+            box-shadow: 0 0 12px rgba(255, 0, 127, 0.4);
+        }
+
+        .log-wrap {
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+        }
+
+        /* Normal view: exactly 5 commands visible */
+        .log-viewport {
+            flex: 1;
+            min-width: 0;
+            min-height: 0;
+            height: calc(var(--row-h) * 5);
+            overflow-y: auto;
+            scroll-snap-type: y mandatory;
+            scrollbar-width: none;
+        }
+
+        .log-viewport::-webkit-scrollbar { display: none; }
+
+        .history-empty {
+            height: calc(var(--row-h) * 5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            letter-spacing: 1px;
+        }
+
+        .history-item {
+            height: var(--row-h);
+            scroll-snap-align: start;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            font-family: 'Space Grotesk', monospace;
+            font-size: 0.8rem;
+            gap: 8px;
+        }
+
+        .history-item-content {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #94a3b8;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .history-item-content .expr {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .history-item-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-primary);
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        button.delete-item-btn {
+            background: none;
+            border: none;
+            box-shadow: none;
+            cursor: pointer;
+            padding: 2px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.4;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+
+        button.delete-item-btn:hover {
+            opacity: 1;
+            transform: scale(1.15);
+            background: none;
+            box-shadow: none;
+        }
+
+        .delete-item-icon {
+            width: 12px;
+            height: 12px;
+            stroke: var(--neon-pink);
+            fill: none;
+            stroke-width: 2;
+        }
+
+        /* ---------- Side column: full-screen button + elevator ---------- */
+        .log-side {
+            width: 30px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        button.fs-btn {
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            border-radius: 9px;
+            color: #cbd5e1;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            box-shadow: none;
+            flex-shrink: 0;
+        }
+
+        button.fs-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: none;
+            box-shadow: none;
+        }
+
+        button.fs-btn:active { transform: scale(0.92); }
+
+        .fs-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+        .fs-btn .icon-collapse { display: none; }
+        .calculator.expanded .fs-btn .icon-expand { display: none; }
+        .calculator.expanded .fs-btn .icon-collapse { display: block; }
+
+        /* Elevator: only in full-screen view and only after 20 commands */
+        .elevator {
+            display: none;
+            flex: 1;
+            min-height: 0;
+            width: 28px;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 0;
+            background: none;
+            border: none;
+            box-shadow: none;
+        }
+
+        .calculator.elev-on .elevator { display: flex; animation: elevatorIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+        @keyframes elevatorIn {
+            from { opacity: 0; transform: translateX(10px); }
+            to { opacity: 1; transform: none; }
+        }
+
+        .elev-floor {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.5rem;
+            font-weight: 600;
+            color: #94a3b8;
+            text-align: center;
+            line-height: 1.2;
+            letter-spacing: 0.2px;
+            display: none;
+        }
+
+        .calculator.expanded .elev-floor { display: block; }
+
+        .elev-shaft {
+            flex: 1;
+            min-height: 20px;
+            width: 6px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            position: relative;
+            touch-action: none;
+            cursor: pointer;
+        }
+
+        /* wider invisible touch area around the thin rail */
+        .elev-shaft::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: -11px;
+            right: -11px;
+        }
+
+        .elev-car {
+            position: absolute;
+            left: -6px;
+            width: 18px;
+            height: 16px;
+            top: 0;
+            background: #cbd5e1;
+            clip-path: polygon(50% 0, 100% 100%, 0 100%);
+            transition: top 0.35s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+
+        .elev-shaft.dragging .elev-car { transition: none; }
+
+        /* ---------- Full-screen commands view ---------- */
+        .calculator.expanded .history-panel { flex: 1; min-height: 0; margin-bottom: 0; }
+        .calculator.expanded .log-wrap { flex: 1; min-height: 0; }
+        .calculator.expanded .log-viewport { height: auto; }
+        .calculator.expanded .history-empty { height: 100%; }
+        .calculator.expanded .display-container,
+        .calculator.expanded .buttons { display: none; }
+
+        /* ---------- Total ---------- */
+        .history-total-line {
+            border-top: 1px dashed rgba(255, 255, 255, 0.08);
+            margin-top: 6px;
+            padding-top: 6px;
+            font-size: 0.95rem;
+            color: var(--neon-green);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            font-weight: 700;
+            text-shadow: 0 0 10px rgba(0, 255, 135, 0.3);
+            flex-shrink: 0;
+        }
+
+        .total-amount-box {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            text-align: right;
+            max-width: 230px;
+        }
+
+        .total-numeric {
+            font-size: 1.4rem;
+            font-weight: 800;
+            font-family: 'Space Grotesk', sans-serif;
+            text-shadow: 0 0 12px rgba(0, 255, 135, 0.4);
+        }
+
+        .total-words {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-top: 1px;
+            line-height: 1.25;
+            word-break: break-word;
+        }
+
+        .total-words-hindi {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-top: 1px;
+            line-height: 1.3;
+            word-break: break-word;
+        }
+
+        /* ---------- Display ---------- */
+        .display-container {
+            background: linear-gradient(145deg, rgba(2, 4, 8, 0.9), rgba(6, 10, 18, 0.95));
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            border-radius: 18px;
+            padding: 4px 16px;
+            margin-bottom: 8px;
+            flex-shrink: 0;
+            box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 242, 254, 0.05);
+        }
+
+        #display {
+            width: 100%;
+            height: 46px;
+            background: transparent;
+            border: none;
+            outline: none;
+            background-image: linear-gradient(180deg, #ffffff 20%, #00f2fe 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2.2rem;
+            font-weight: 700;
+            text-align: right;
+            font-family: 'Space Grotesk', sans-serif;
+            letter-spacing: -0.5px;
+            filter: drop-shadow(0 2px 8px rgba(0, 242, 254, 0.4));
+            transition: font-size 0.2s ease;
+        }
+
+        /* ---------- Keypad ---------- */
+        .buttons {
+            flex: 1;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(5, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        button {
+            padding: 0;
+            min-height: 0;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            outline: none;
+            font-size: clamp(1.5rem, 4.4dvh, 2rem);
+            font-weight: 700;
+            cursor: pointer;
+            color: var(--text-primary);
+            text-align: center;
+            background: var(--btn-num-bg);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        button:hover {
+            background: var(--btn-num-hover);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .buttons button:active { transform: scale(0.95); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4); }
+
+        button.operator {
+            background: linear-gradient(145deg, rgba(0, 242, 254, 0.12), rgba(0, 242, 254, 0.04));
+            color: var(--neon-cyan);
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            font-weight: 800;
+            text-shadow: 0 0 8px rgba(0, 242, 254, 0.4);
+        }
+
+        button.operator:hover {
+            background: linear-gradient(145deg, rgba(0, 242, 254, 0.22), rgba(0, 242, 254, 0.1));
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        button.clear {
+            background: linear-gradient(145deg, rgba(255, 0, 127, 0.12), rgba(255, 0, 127, 0.04));
+            color: var(--neon-pink);
+            border: 1px solid rgba(255, 0, 127, 0.25);
+            text-shadow: 0 0 8px rgba(255, 0, 127, 0.4);
+        }
+
+        button.clear:hover {
+            background: linear-gradient(145deg, rgba(255, 0, 127, 0.22), rgba(255, 0, 127, 0.1));
+            box-shadow: 0 0 20px rgba(255, 0, 127, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        button.history-btn {
+            background: linear-gradient(145deg, rgba(255, 221, 0, 0.12), rgba(255, 221, 0, 0.04));
+            color: var(--neon-yellow);
+            border: 1px solid rgba(255, 221, 0, 0.25);
+            text-shadow: 0 0 8px rgba(255, 221, 0, 0.4);
+        }
+
+        button.history-btn:hover {
+            background: linear-gradient(145deg, rgba(255, 221, 0, 0.22), rgba(255, 221, 0, 0.1));
+            box-shadow: 0 0 20px rgba(255, 221, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        button.equal {
+            background: linear-gradient(135deg, var(--neon-cyan), #0072ff);
+            color: #030509;
+            border: none;
+            font-weight: 800;
+            box-shadow: 0 8px 25px rgba(0, 242, 254, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        }
+
+        button.equal:hover { box-shadow: 0 12px 35px rgba(0, 242, 254, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.6); }
+
+        /* History (clock) button: icon half a pixel smaller */
+        .buttons button.history-btn .btn-icon { width: calc(clamp(24px, 3.6dvh, 30px) - 0.5px); height: calc(clamp(24px, 3.6dvh, 30px) - 0.5px); }
+
+        /* Plus and Back: slightly larger than the other keys */
+        .buttons button.plus { font-size: clamp(1.9rem, 5.2dvh, 2.5rem); font-weight: 800; }
+        .buttons button.back .btn-icon { width: clamp(28px, 4.2dvh, 34px); height: clamp(28px, 4.2dvh, 34px); }
+
+        .btn-icon {
+            width: clamp(24px, 3.6dvh, 30px);
+            height: clamp(24px, 3.6dvh, 30px);
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* ---------- Wide screens: centered column on black ---------- */
+        @media (min-width: 600px) {
+            .calculator { max-width: 480px; }
+        }
+
+        /* ---------- Session modal ---------- */
+        .modal-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(3, 5, 10, 0.96);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-radius: 0;
+            z-index: 100;
+            padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+            flex-direction: column;
+            animation: modalPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes modalPop {
+            from { opacity: 0; transform: scale(0.92); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+
+        .modal-title {
+            color: var(--neon-yellow);
+            font-size: 0.9rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(255, 221, 0, 0.3);
+        }
+
+        button.modal-close {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            width: 32px;
+            height: 32px;
+            border-radius: 100px;
+            box-shadow: none;
+        }
+
+        button.modal-close:hover {
+            background: rgba(255, 0, 127, 0.2);
+            color: var(--neon-pink);
+            border-color: rgba(255, 0, 127, 0.4);
+        }
+
+        .session-list {
+            flex: 1;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+        }
+
+        .session-card {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 20px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .session-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: var(--neon-cyan);
+            margin-bottom: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .session-item {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Space Grotesk', monospace;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-bottom: 4px;
+        }
+
+        .session-expr { display: flex; gap: 8px; min-width: 0; }
+        .session-serial { color: var(--text-muted); min-width: 22px; }
+
+        .session-total {
+            border-top: 1px dashed rgba(255, 255, 255, 0.08);
+            margin-top: 10px;
+            padding-top: 8px;
+            display: flex;
+            justify-content: space-between;
+            font-weight: 700;
+            color: var(--neon-green);
+            font-size: 0.88rem;
+        }
+
+        .session-words {
+            margin-top: 4px;
+            text-align: right;
+            color: var(--text-primary);
+            font-size: 0.78rem;
+            font-weight: 500;
+            line-height: 1.35;
+            word-break: break-word;
+        }
+
+        .session-words.hi { font-size: 0.85rem; }
+
+        .btn-dl {
+            color: var(--neon-cyan);
+            background: rgba(0, 242, 254, 0.1);
+            border-color: rgba(0, 242, 254, 0.3);
+        }
+
+        .btn-dl:hover {
+            background: rgba(0, 242, 254, 0.2);
+            box-shadow: 0 0 12px rgba(0, 242, 254, 0.4);
+        }
+
+        .card-actions { display: flex; align-items: center; gap: 6px; }
+
+        /* ---------- Image preview (works inside APK / WebView) ---------- */
+        .img-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 300;
+            background: #03050a;
+            flex-direction: column;
+            padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom));
+        }
+
+        .img-modal.active { display: flex; }
+
+        .img-modal-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            color: var(--neon-yellow);
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .img-modal-body {
+            flex: 1;
+            min-height: 0;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .img-modal-body img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 14px;
+            background: #ffffff;
+            -webkit-touch-callout: default;
+            user-select: auto;
+        }
+
+        .img-modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .img-modal-actions button {
+            flex: 1;
+            height: 48px;
+            font-size: 0.95rem;
+            border-radius: 14px;
+            gap: 8px;
+        }
+
+        .img-modal-hint {
+            margin-top: 8px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+        }
+
+        /* ---------- Day / Night toggle ---------- */
+        .logo-wrapper { position: relative; }
+
+        button.theme-btn {
+            position: absolute;
+            right: 0;
+            top: calc(50% - 4px);
+            transform: translateY(-50%);
+            width: 25px;
+            height: 25px;
+            padding: 0;
+            border-radius: 50%;
+            color: #fcd34d;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            box-shadow: none;
+            z-index: 2;
+        }
+        button.theme-btn:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.3); box-shadow: none; }
+        button.theme-btn:active { transform: translateY(-50%) scale(0.9); }
+        .theme-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .theme-btn .icon-moon { display: none; }
+        .theme-btn.spin svg { animation: themeSpin 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes themeSpin { from { transform: rotate(-90deg) scale(0.5); opacity: 0; } to { transform: none; opacity: 1; } }
+
+        html[data-theme="light"] .theme-btn .icon-sun { display: none; }
+        html[data-theme="light"] .theme-btn .icon-moon { display: block; }
+        html[data-theme="light"] button.theme-btn { color: #334155; background: #ffffff; border-color: #e2e8f0; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.10); }
+        html[data-theme="light"] button.theme-btn:hover { background: #f1f5f9; border-color: #cbd5e1; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.14); }
+
+        /* ---------- Clean look (both themes): no glow, no shadow ---------- */
+        .logo-badge { box-shadow: none; }
+        .logo-text { text-shadow: none; }
+        .history-panel, .display-container, .session-card { box-shadow: none; }
+        .history-total-line, .total-numeric, .modal-title { text-shadow: none; }
+        .btn-link:hover, .btn-dl:hover { box-shadow: none; }
+        #display { filter: none; }
+        .buttons button,
+        .buttons button:hover,
+        .buttons button:active,
+        .buttons button.operator:hover,
+        .buttons button.clear:hover,
+        .buttons button.history-btn:hover,
+        .buttons button.equal:hover { box-shadow: none; text-shadow: none; }
+        .buttons button.equal .btn-icon { width: clamp(28px, 4.2dvh, 34px); height: clamp(28px, 4.2dvh, 34px); }
+
+        /* ---------- Day theme (flat, no gradients, no glow) ---------- */
+        html[data-theme="light"] {
+            --calc-card: #ffffff;
+            --neon-cyan: #0e7490;
+            --neon-pink: #be123c;
+            --neon-green: #047857;
+            --neon-yellow: #b45309;
+            --text-primary: #0f172a;
+            --text-muted: #64748b;
+            --btn-num-bg: #f1f5f9;
+            --btn-num-hover: #e2e8f0;
+        }
+        html[data-theme="light"], html[data-theme="light"] body { background: #ffffff; }
+        html[data-theme="light"] .calculator { background: #ffffff; backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+        /* logo: dark badge for contrast */
+        html[data-theme="light"] .logo-wrapper { border-bottom-color: #e2e8f0; }
+        html[data-theme="light"] .logo-badge { background: #0f172a; border-color: #0f172a; box-shadow: none; }
+        html[data-theme="light"] .logo-text { color: #22d3ee; text-shadow: none; }
+
+        /* panels */
+        html[data-theme="light"] .history-panel { background: #f1f5f9; border: 1px solid #e2e8f0; box-shadow: none; color: #475569; }
+        html[data-theme="light"] .history-item { border-bottom-color: #e2e8f0; }
+        html[data-theme="light"] .history-item-content { color: #475569; }
+        html[data-theme="light"] .history-total-line { border-top-color: #cbd5e1; text-shadow: none; }
+        html[data-theme="light"] .total-numeric { text-shadow: none; }
+        html[data-theme="light"] .btn-link { background: #ffe4e6; border-color: #fecdd3; color: #be123c; }
+        html[data-theme="light"] .btn-link:hover { background: #fecdd3; box-shadow: none; }
+        html[data-theme="light"] .btn-dl { background: #cffafe; border-color: #a5f3fc; color: #0e7490; }
+        html[data-theme="light"] .btn-dl:hover { background: #a5f3fc; box-shadow: none; }
+        html[data-theme="light"] button.fs-btn { color: #475569; background: #ffffff; border-color: #cbd5e1; }
+        html[data-theme="light"] button.fs-btn:hover { background: #e2e8f0; border-color: #94a3b8; }
+        html[data-theme="light"] .elev-shaft { background: #cbd5e1; }
+        html[data-theme="light"] .elev-car { background: #64748b; }
+        html[data-theme="light"] .elev-floor { color: #64748b; }
+        html[data-theme="light"] button.theme-btn { color: #0f172a; background: #f1f5f9; border-color: #cbd5e1; box-shadow: none; }
+        html[data-theme="light"] button.theme-btn:hover { background: #e2e8f0; border-color: #94a3b8; box-shadow: none; }
+
+        /* display */
+        html[data-theme="light"] .display-container { background: #f1f5f9; border: 1px solid #e2e8f0; box-shadow: none; }
+        html[data-theme="light"] #display { background-image: none; -webkit-text-fill-color: #0f172a; color: #0f172a; filter: none; }
+        html[data-theme="light"] #display::placeholder { color: #94a3b8; -webkit-text-fill-color: #94a3b8; }
+
+        /* keypad */
+        html[data-theme="light"] .buttons button { background: #f1f5f9; color: #0f172a; border: 1px solid #e2e8f0; box-shadow: none; text-shadow: none; }
+        html[data-theme="light"] .buttons button:hover { background: #e2e8f0; border-color: #cbd5e1; }
+        html[data-theme="light"] .buttons button svg { filter: none; }
+        /* operators, clear and history: same soft light-key style */
+        html[data-theme="light"] .buttons button.operator { background: #e0e7ff; color: #4338ca; border-color: #c7d2fe; }
+        html[data-theme="light"] .buttons button.operator:hover { background: #c7d2fe; border-color: #a5b4fc; }
+        html[data-theme="light"] .buttons button.clear { background: #ffe4e6; color: #e11d48; border-color: #fecdd3; }
+        html[data-theme="light"] .buttons button.clear:hover { background: #fecdd3; border-color: #fda4af; }
+        html[data-theme="light"] .buttons button.history-btn { background: #fffbeb; color: #92400e; border-color: #fef3c7; }
+        html[data-theme="light"] .buttons button.history-btn:hover { background: #fef3c7; border-color: #fde68a; }
+        html[data-theme="light"] .buttons button.equal { background: #3b82f6; color: #ffffff; border: 1px solid #3b82f6; }
+        html[data-theme="light"] .buttons button.equal:hover { background: #2563eb; border-color: #2563eb; }
+
+        /* sessions + image preview */
+        html[data-theme="light"] .modal-overlay { background: #ffffff; }
+        html[data-theme="light"] .modal-header { border-bottom-color: #e2e8f0; }
+        html[data-theme="light"] button.modal-close { background: #f1f5f9; border-color: #cbd5e1; color: #0f172a; }
+        html[data-theme="light"] button.modal-close:hover { background: #ffe4e6; color: #be123c; border-color: #fecdd3; }
+        html[data-theme="light"] .session-card { background: #f8fafc; border-color: #e2e8f0; box-shadow: none; }
+        html[data-theme="light"] .session-item { color: #475569; }
+        html[data-theme="light"] .session-total { border-top-color: #cbd5e1; }
+        html[data-theme="light"] .session-list { scrollbar-color: #cbd5e1 transparent; }
+        html[data-theme="light"] .img-modal { background: #ffffff; }
+        html[data-theme="light"] .img-modal-body img { box-shadow: none; border: 1px solid #e2e8f0; }
+        html[data-theme="light"] .img-modal-actions button.operator { background: #e0e7ff; color: #4338ca; border-color: #c7d2fe; text-shadow: none; box-shadow: none; }
+        html[data-theme="light"] .img-modal-actions button.equal { background: #3b82f6; color: #ffffff; box-shadow: none; }
+
+        /* Keypad symbols are SVG so they sit exactly in the centre of each key */
+        .op-icon {
+            width: clamp(24px, 3.8dvh, 30px);
+            height: clamp(24px, 3.8dvh, 30px);
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2.6;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            display: block;
+            flex-shrink: 0;
+        }
+        .op-icon.eq { stroke-width: 2.6; }
+                html:not([data-theme="light"]) button.operator .op-icon { filter: drop-shadow(0 0 4px rgba(0, 242, 254, 0.4)); }
+
+        /* ---------- Night: whole screen pure black ---------- */
+        html:not([data-theme="light"]), html:not([data-theme="light"]) body, html:not([data-theme="light"]) .calculator { background: #000000; }
+        html:not([data-theme="light"]) .history-panel { background: #000000; border: 1px solid rgba(255, 255, 255, 0.10); }
+        html:not([data-theme="light"]) .display-container { background: #000000; }
+        html:not([data-theme="light"]) .modal-overlay { background: #000000; }
+
+        /* ---------- Status-bar strip follows the active theme ---------- */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--sb);
+            background: #000000;
+            z-index: 1000;
+            pointer-events: none;
+        }
+        html[data-theme="light"] body::before { background: #ffffff; }
+
+        /* Night: rounded top corners where the black screen meets the white status strip */
+        body::after {
+            content: "";
+            display: none;
+            position: fixed;
+            top: var(--sb);
+            left: 0;
+            right: 0;
+            height: 10px;
+            z-index: 999;
+            pointer-events: none;
+            background:
+                radial-gradient(circle at 100% 100%, transparent 9px, #ffffff 10px) left top / 10px 10px no-repeat,
+                radial-gradient(circle at 0 100%, transparent 9px, #ffffff 10px) right top / 10px 10px no-repeat;
+        }
+        html:not([data-theme="light"]) body::after { display: none; }
+
+
+        /* ---------- Left navigation drawer ---------- */
+        .menu-btn {
+            position:absolute; left:0; top:calc(50% - 4px); transform:translateY(-50%);
+            width:25px; height:25px; padding:0; display:flex; align-items:center; justify-content:center;
+            border-radius:50%; border:1px solid rgba(255,255,255,.16);
+            background:rgba(255,255,255,.06); color:#f8fafc; cursor:pointer; z-index:3;
+            box-shadow:none; outline:none; -webkit-tap-highlight-color:transparent;
+        }
+        .menu-btn:hover, .menu-btn:focus, .menu-btn:focus-visible { box-shadow:none; outline:none; }
+        .menu-btn:active { transform:translateY(-50%) scale(.96); box-shadow:none; }
+        .menu-btn svg { width:19px; height:19px; stroke:currentColor; stroke-width:2; fill:none; stroke-linecap:round; pointer-events:none; }
+        html[data-theme="light"] .menu-btn { color:#0f172a; background:#f1f5f9; border-color:#cbd5e1; box-shadow:none; }
+        .drawer-backdrop {
+            position:fixed; inset:0; background:rgba(0,0,0,.48); z-index:50;
+            opacity:0; visibility:hidden; transition:opacity .22s ease,visibility .22s ease;
+        }
+        .drawer-backdrop.open { opacity:1; visibility:visible; }
+        .app-drawer {
+            position:absolute; top:0; left:0; bottom:0; width:min( min(340px, 86vw), 340px);
+            padding:calc(env(safe-area-inset-top,0px) + 24px) 20px calc(env(safe-area-inset-bottom,0px) + 20px);
+            background:#080b12; color:#f8fafc; border-right:1px solid rgba(255,255,255,.12);
+            transform:translateX(-102%); transition:transform .25s ease; display:flex; flex-direction:column; gap:18px;
+            box-shadow:12px 0 36px rgba(0,0,0,.24);
+        }
+        .drawer-backdrop.open .app-drawer { transform:translateX(0); }
+        .drawer-top { display:flex; align-items:center; justify-content:space-between; }
+        .drawer-brand { font:700 .9rem 'Space Grotesk',sans-serif; letter-spacing:2px; color:#00d8e8; }
+        .drawer-close { width:34px;height:34px;border-radius:10px;border:1px solid #293241;background:#111827;color:inherit;font-size:22px;cursor:pointer; }
+        .about-card { padding:18px; border:1px solid #263244; border-radius:16px; background:#101722; }
+        .about-kicker { color:#22d3ee; font-size:.65rem; font-weight:800; letter-spacing:1.8px; text-transform:uppercase; margin-bottom:9px; }
+        .about-name { font:700 1.25rem 'Space Grotesk',sans-serif; margin-bottom:7px; }
+        .about-role { color:#67e8f9; font-size:.78rem; font-weight:700; line-height:1.5; margin-bottom:11px; }
+        .about-copy { color:#aab6c7; font-size:.78rem; line-height:1.65; }
+        .drawer-share {
+            width:100%; display:flex; align-items:center; justify-content:center; gap:9px; padding:13px 16px;
+            border:0; border-radius:12px; background:#06b6d4; color:#06202a; font-weight:800; font-size:.84rem; cursor:pointer;
+        }
+        .drawer-share svg { width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round; }
+        .drawer-foot { margin-top:auto; color:#718096; font-size:.68rem; text-align:center; }
+        html[data-theme="light"] .app-drawer { background:#fff; color:#0f172a; border-right-color:#e2e8f0; }
+        html[data-theme="light"] .drawer-close { background:#f1f5f9; border-color:#e2e8f0; color:#0f172a; }
+        html[data-theme="light"] .about-card { background:#f8fafc; border-color:#e2e8f0; }
+        html[data-theme="light"] .about-copy { color:#475569; }
+        html[data-theme="light"] .drawer-foot { color:#64748b; }
+
+        /* Native status-bar control available: real full screen, no white strip / corner ears */
+        html.native-bar { --sb: env(safe-area-inset-top, 0px); }
+        html.native-bar body::before, html.native-bar body::after { display: none !important; }
+
+        .calculator, body { transition: background-color 0.3s ease; }
+    </style>
+</head>
+<body>
+
+    <div class="calculator" id="calculator">
+        <div class="logo-wrapper">
+            <button class="menu-btn" type="button" onclick="openAppMenu()" aria-label="Open menu" title="Menu">
+                <svg viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+            </button>
+            <div class="logo-badge">
+                <span class="logo-text">JAHANGEER</span>
+            </div>
+            <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Day / Night mode" aria-label="Toggle day and night mode">
+                <svg class="icon-sun" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="4"/>
+                    <line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/>
+                    <line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/>
+                    <line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/>
+                    <line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/>
+                </svg>
+                <svg class="icon-moon" viewBox="0 0 24 24">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Commands (5 visible; full-screen shows up to 20 at once) -->
+        <div class="history-panel" id="history-box">
+            <div class="panel-title">
+                <span>COMMANDS</span>
+                <div class="controls">
+                    <span class="btn-link" onclick="clearCommandsLog()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                        <span>Clear</span>
+                    </span>
+                </div>
+            </div>
+
+            <div class="log-wrap">
+                <div class="log-viewport" id="log-viewport">
+                    <div id="history-items"></div>
+                </div>
+
+                <div class="log-side">
+                    <button class="fs-btn" id="fs-btn" onclick="toggleFullScreen()" title="Full screen commands" aria-label="Toggle full screen commands">
+                        <svg class="icon-expand" viewBox="0 0 24 24">
+                            <polyline points="15 3 21 3 21 9"/>
+                            <polyline points="9 21 3 21 3 15"/>
+                            <line x1="21" y1="3" x2="14" y2="10"/>
+                            <line x1="3" y1="21" x2="10" y2="14"/>
+                        </svg>
+                        <svg class="icon-collapse" viewBox="0 0 24 24">
+                            <polyline points="4 14 10 14 10 20"/>
+                            <polyline points="20 10 14 10 14 4"/>
+                            <line x1="14" y1="10" x2="21" y2="3"/>
+                            <line x1="3" y1="21" x2="10" y2="14"/>
+                        </svg>
+                    </button>
+
+                    <!-- Elevator: full-screen view, after 20 commands. Drag or tap the shaft. -->
+                    <div class="elevator" id="elevator">
+                        <div class="elev-floor" id="elev-floor"></div>
+                        <div class="elev-shaft" id="elev-shaft"><div class="elev-car" id="elev-car"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="history-total-line">
+                <span>Σ Total Sum:</span>
+                <div class="total-amount-box">
+                    <span class="total-numeric" id="history-grand-total">0</span>
+                    <span class="total-words" id="history-grand-total-words">Zero</span>
+                    <span class="total-words-hindi" id="history-grand-total-words-hindi">शून्य</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="display-container">
+            <input type="text" id="display" readonly placeholder="0">
+        </div>
+
+        <div class="buttons">
+            <button class="clear" onclick="clearDisplay()" title="Clear">
+                <svg class="btn-icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+            <button onclick="deleteLast()" class="back" title="Delete">
+                <svg class="btn-icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                    <polyline points="12 5 5 12 12 19"/>
+                </svg>
+            </button>
+            <button onclick="appendPercent()" class="operator" aria-label="Percent"><svg class="op-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="7" r="2.6"/><circle cx="17" cy="17" r="2.6"/><line x1="18" y1="5" x2="6" y2="19"/></svg></button>
+            <button onclick="appendValue('/')" class="operator" aria-label="Divide"><svg class="op-icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><circle cx="12" cy="5.8" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="18.2" r="1.4" fill="currentColor" stroke="none"/></svg></button>
+
+            <button onclick="appendValue('7')">7</button>
+            <button onclick="appendValue('8')">8</button>
+            <button onclick="appendValue('9')">9</button>
+            <button onclick="appendValue('*')" class="operator" aria-label="Multiply"><svg class="op-icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
+
+            <button onclick="appendValue('4')">4</button>
+            <button onclick="appendValue('5')">5</button>
+            <button onclick="appendValue('6')">6</button>
+            <button onclick="appendValue('-')" class="operator" aria-label="Minus"><svg class="op-icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+
+            <button onclick="appendValue('1')">1</button>
+            <button onclick="appendValue('2')">2</button>
+            <button onclick="appendValue('3')">3</button>
+
+            <button onclick="appendValue('+')" class="operator plus" title="Add" aria-label="Plus"><svg class="op-icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+
+            <button onclick="appendValue('0')">0</button>
+            <button onclick="appendValue('.')">.</button>
+            <button class="history-btn" onclick="openSessionModal()" title="10-Min Session Breakdown">
+                <svg class="btn-icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path d="M3 12a9 9 0 1 0 2.64-6.36L3 8"/>
+                    <polyline points="3 3 3 8 8 8"/>
+                    <polyline points="12 7.5 12 12 15.5 14"/>
+                </svg>
+            </button>
+            <button class="equal" onclick="calculate()" title="Equals" aria-label="Equals"><svg class="op-icon eq" viewBox="0 0 24 24" aria-hidden="true"><line x1="5" y1="9.2" x2="19" y2="9.2"/><line x1="5" y1="14.8" x2="19" y2="14.8"/></svg></button>
+        </div>
+
+        <!-- Session Breakdown Modal -->
+        <div class="modal-overlay" id="session-modal">
+            <div class="modal-header">
+                <span class="modal-title">10-Min Sessions</span>
+                <div class="controls">
+                    <span class="btn-link" onclick="clearAllSessionHistory()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                        <span>Clear All</span>
+                    </span>
+                    <button class="modal-close" onclick="closeSessionModal()">✕</button>
+                </div>
+            </div>
+            <div class="session-list" id="session-list-container"></div>
+        </div>
+    </div>
+
+    <div class="drawer-backdrop" id="app-drawer-backdrop" aria-hidden="true" onclick="backdropCloseMenu(event)">
+        <aside class="app-drawer" role="dialog" aria-modal="true" aria-label="App menu" onclick="event.stopPropagation()">
+            <div class="drawer-top">
+                <span class="drawer-brand">JAHANGEER</span>
+                <button class="drawer-close" type="button" onclick="closeAppMenu()" aria-label="Close menu">×</button>
+            </div>
+            <section class="about-card" aria-labelledby="about-title">
+                <div class="about-kicker">About Us</div>
+                <div class="about-name" id="about-title">Jahangeer Ansari</div>
+                <div class="about-role">Creative Designer &amp; Vibe Coder</div>
+                <div class="about-copy">Expert in Adobe Photoshop, Premiere Pro and Illustrator. Combining creative design with vibe coding to build modern digital experiences.</div>
+            </section>
+            <button class="drawer-share" type="button" onclick="shareThisApp()">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4M8.7 13.3l6.6 4.4"/></svg>
+                Share This App
+            </button>
+        </aside>
+    </div>
+
+    <div class="img-modal" id="img-modal">
+        <div class="img-modal-head">
+            <span>Session Image</span>
+            <button class="modal-close" onclick="closeImageModal()">✕</button>
+        </div>
+        <div class="img-modal-body"><img id="img-modal-img" alt="Session image"></div>
+        <div class="img-modal-actions">
+            <button class="operator" id="img-share-btn" onclick="shareCurrentImage()">Share</button>
+            <button class="equal" onclick="saveCurrentImage()">Download</button>
+        </div>
+    </div>
+
+    <script>
+        // Pinch zoom off (iOS Safari ignores user-scalable=no, so block gestures too)
+        ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (ev) {
+            document.addEventListener(ev, function (e) { e.preventDefault(); });
+        });
+
+        const calc = document.getElementById('calculator');
+        const display = document.getElementById('display');
+        const historyItemsContainer = document.getElementById('history-items');
+        const logViewport = document.getElementById('log-viewport');
+        const historyGrandTotalDisplay = document.getElementById('history-grand-total');
+        const historyGrandTotalWordsDisplay = document.getElementById('history-grand-total-words');
+        const historyGrandTotalWordsHindiDisplay = document.getElementById('history-grand-total-words-hindi');
+        const sessionModal = document.getElementById('session-modal');
+        const sessionListContainer = document.getElementById('session-list-container');
+
+        const elevFloor = document.getElementById('elev-floor');
+        const elevShaft = document.getElementById('elev-shaft');
+        const elevCar = document.getElementById('elev-car');
+
+        const NORMAL_ROWS = 5;      // commands visible in normal view
+        const FULL_ROWS = 20;       // commands visible at once in full-screen view
+        const DEFAULT_ROW_H = 22;
+
+        function loadJSON(key) {
+            try { return JSON.parse(localStorage.getItem(key)) || []; } catch (e) { return []; }
+        }
+
+        let commandsLogArray = loadJSON('jahangeer_calc_logs');
+        let sessionHistoryArray = loadJSON('jahangeer_calc_sessions');
+        let isExpanded = false;
+
+        function saveState() {
+            try {
+                localStorage.setItem('jahangeer_calc_logs', JSON.stringify(commandsLogArray));
+                localStorage.setItem('jahangeer_calc_sessions', JSON.stringify(sessionHistoryArray));
+            } catch (e) { /* storage unavailable */ }
+        }
+
+        function adjustDisplayFontSize() {
+            const len = display.value.length;
+            if (len <= 16) display.style.fontSize = '2.2rem';
+            else if (len <= 28) display.style.fontSize = '1.6rem';
+            else display.style.fontSize = '1.1rem';
+        }
+
+        /* =====================  NUMBER → ENGLISH WORDS  ===================== */
+        function numberToWords(num) {
+            if (num === 0) return "Zero";
+            if (Math.abs(num) >= 1e15) return "Number too large";
+
+            const isNegative = num < 0;
+            num = Math.abs(num);
+
+            const units = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+                "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"];
+            const tens = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
+            const scales = ["", "thousand", "million", "billion", "trillion"];
+
+            const parts = num.toString().split(".");
+            let integerPart = parseInt(parts[0], 10);
+            const decimalPart = parts[1];
+
+            function convertChunk(n) {
+                const out = [];
+                if (n >= 100) {
+                    out.push(units[Math.floor(n / 100)] + " hundred");
+                    n %= 100;
+                }
+                if (n >= 20) {
+                    let t = tens[Math.floor(n / 10)];
+                    if (n % 10) t += "-" + units[n % 10];
+                    out.push(t);
+                } else if (n > 0) {
+                    out.push(units[n]);
+                }
+                return out.join(" ");
+            }
+
+            let words;
+            if (integerPart === 0) {
+                words = "zero";
+            } else {
+                const wordArr = [];
+                let scaleIndex = 0;
+                while (integerPart > 0) {
+                    const chunk = integerPart % 1000;
+                    if (chunk > 0) {
+                        let chunkText = convertChunk(chunk);
+                        if (scales[scaleIndex]) chunkText += " " + scales[scaleIndex];
+                        wordArr.unshift(chunkText);
+                    }
+                    integerPart = Math.floor(integerPart / 1000);
+                    scaleIndex++;
+                }
+                words = wordArr.join(" ");
+            }
+
+            if (decimalPart) {
+                words += " point " + decimalPart.split('').map(d => units[parseInt(d, 10)]).join(" ");
+            }
+
+            const full = (isNegative ? "negative " : "") + words.trim();
+            return full.split(' ').map(w => w ? w.charAt(0).toUpperCase() + w.slice(1) : '').join(' ');
+        }
+
+        /* =====================  NUMBER → HINDI WORDS  ===================== */
+        const HINDI_ONES = [
+            "", "एक", "दो", "तीन", "चार", "पाँच", "छह", "सात", "आठ", "नौ",
+            "दस", "ग्यारह", "बारह", "तेरह", "चौदह", "पंद्रह", "सोलह", "सत्रह", "अठारह", "उन्नीस",
+            "बीस", "इक्कीस", "बाईस", "तेईस", "चौबीस", "पच्चीस", "छब्बीस", "सत्ताईस", "अट्ठाईस", "उनतीस",
+            "तीस", "इकतीस", "बत्तीस", "तैंतीस", "चौंतीस", "पैंतीस", "छत्तीस", "सैंतीस", "अड़तीस", "उनतालीस",
+            "चालीस", "इकतालीस", "बयालीस", "तैंतालीस", "चौवालीस", "पैंतालीस", "छियालीस", "सैंतालीस", "अड़तालीस", "उनचास",
+            "पचास", "इक्यावन", "बावन", "तिरपन", "चौवन", "पचपन", "छप्पन", "सत्तावन", "अट्ठावन", "उनसठ",
+            "साठ", "इकसठ", "बासठ", "तिरसठ", "चौंसठ", "पैंसठ", "छियासठ", "सड़सठ", "अड़सठ", "उनहत्तर",
+            "सत्तर", "इकहत्तर", "बहत्तर", "तिहत्तर", "चौहत्तर", "पचहत्तर", "छिहत्तर", "सतहत्तर", "अठहत्तर", "उन्यासी",
+            "अस्सी", "इक्यासी", "बयासी", "तिरासी", "चौरासी", "पचासी", "छियासी", "सतासी", "अट्ठासी", "नवासी",
+            "नब्बे", "इक्यानवे", "बानवे", "तिरानवे", "चौरानवे", "पचानवे", "छियानवे", "सत्तानवे", "अट्ठानवे", "निन्यानवे"
+        ];
+
+        const HINDI_SCALES = [
+            { value: 1e11, name: "खरब" },
+            { value: 1e9, name: "अरब" },
+            { value: 1e7, name: "करोड़" },
+            { value: 1e5, name: "लाख" },
+            { value: 1e3, name: "हज़ार" }
+        ];
+
+        function hindiBelowThousand(n) {
+            if (n === 0) return "";
+            if (n < 100) return HINDI_ONES[n];
+            const h = Math.floor(n / 100);
+            const rem = n % 100;
+            return HINDI_ONES[h] + " सौ" + (rem > 0 ? " " + HINDI_ONES[rem] : "");
+        }
+
+        function hindiInteger(n) {
+            if (n === 0) return "";
+            for (const s of HINDI_SCALES) {
+                if (n >= s.value) {
+                    const q = Math.floor(n / s.value);
+                    const rem = n % s.value;
+                    return hindiInteger(q) + " " + s.name + (rem > 0 ? " " + hindiInteger(rem) : "");
+                }
+            }
+            return hindiBelowThousand(n);
+        }
+
+        function numberToHindiWords(num) {
+            if (num === 0) return "शून्य";
+            if (Math.abs(num) >= 1e15) return "संख्या बहुत बड़ी है";
+
+            const isNegative = num < 0;
+            num = Math.abs(num);
+
+            const parts = num.toString().split(".");
+            const integerPart = parseInt(parts[0], 10);
+            const decimalPart = parts[1];
+
+            let res = hindiInteger(integerPart).trim();
+            if (!res) res = "शून्य";
+
+            if (decimalPart) {
+                res += " दशमलव " + decimalPart.split('').map(d => HINDI_ONES[parseInt(d, 10)] || "शून्य").join(" ");
+            }
+
+            return (isNegative ? "ऋणात्मक " : "") + res;
+        }
+
+        /* =====================  SESSION IMAGE (SHARE / DOWNLOAD)  ===================== */
+        function fmtNum(n) {
+            return Number.isInteger(n) ? n : parseFloat(n.toFixed(4));
+        }
+
+        function wrapLines(ctx, text, maxWidth) {
+            const words = String(text).split(' ');
+            const lines = [];
+            let line = '';
+            words.forEach(w => {
+                const test = line ? line + ' ' + w : w;
+                if (ctx.measureText(test).width > maxWidth && line) {
+                    lines.push(line);
+                    line = w;
+                } else {
+                    line = test;
+                }
+            });
+            if (line) lines.push(line);
+            return lines;
+        }
+
+        function formatDateTime(ts) {
+            return new Date(ts).toLocaleString('en-IN', {
+                day: '2-digit', month: 'long', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', hour12: true
+            });
+        }
+
+        async function buildSessionImage(items) {
+            try {
+                if (document.fonts && document.fonts.load) {
+                    await Promise.race([
+                        Promise.all([
+                            document.fonts.load('700 28px "Space Grotesk"'),
+                            document.fonts.load('500 24px "Noto Sans Devanagari"'),
+                            document.fonts.load('500 24px "Plus Jakarta Sans"')
+                        ]),
+                        new Promise(res => setTimeout(res, 1500))
+                    ]);
+                }
+            } catch (e) { /* fall back to system fonts */ }
+
+            const W = 900, PAD = 48, ROW = 52;
+            const total = fmtNum(items.reduce((a, c) => a + c.result, 0));
+            const english = numberToWords(total);
+            const hindi = numberToHindiWords(total);
+
+            const m = document.createElement('canvas').getContext('2d');
+            m.font = '500 26px "Plus Jakarta Sans", sans-serif';
+            const enLines = wrapLines(m, english, W - PAD * 2);
+            m.font = '500 28px "Noto Sans Devanagari", sans-serif';
+            const hiLines = wrapLines(m, hindi, W - PAD * 2);
+
+            const topH = 110;
+            const listH = items.length * ROW + 24;
+            const totalH = 150 + enLines.length * 40 + hiLines.length * 46 + 30;
+            const H = topH + listH + totalH;
+
+            const scale = 2;
+            const canvas = document.createElement('canvas');
+            canvas.width = W * scale;
+            canvas.height = H * scale;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(scale, scale);
+            ctx.textBaseline = 'alphabetic';
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, W, H);
+
+            // Date at the top
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#0f172a';
+            ctx.font = '700 30px "Space Grotesk", sans-serif';
+            ctx.fillText(formatDateTime(items[0].timestamp), PAD, 64);
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(PAD, 88);
+            ctx.lineTo(W - PAD, 88);
+            ctx.stroke();
+
+            // Calculations
+            let y = topH;
+            items.forEach((it, i) => {
+                if (i % 2 === 0) {
+                    ctx.fillStyle = '#f8fafc';
+                    ctx.fillRect(PAD - 14, y, W - (PAD - 14) * 2, ROW);
+                }
+                const baseY = y + 34;
+                ctx.textAlign = 'left';
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '600 22px "Space Grotesk", sans-serif';
+                ctx.fillText(String(i + 1).padStart(2, '0'), PAD, baseY);
+                ctx.fillStyle = '#334155';
+                ctx.font = '600 27px "Space Grotesk", sans-serif';
+                ctx.fillText(String(it.rawInput).replace(/\*/g, '×').replace(/\//g, '÷'), PAD + 64, baseY);
+                ctx.textAlign = 'right';
+                ctx.fillStyle = '#0f172a';
+                ctx.fillText(String(it.result), W - PAD, baseY);
+                y += ROW;
+            });
+
+            // Total sum
+            y += 24;
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(PAD, y);
+            ctx.lineTo(W - PAD, y);
+            ctx.stroke();
+
+            y += 62;
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#475569';
+            ctx.font = '700 22px "Space Grotesk", sans-serif';
+            ctx.fillText('TOTAL SUM', PAD, y);
+            ctx.textAlign = 'right';
+            ctx.fillStyle = '#0f172a';
+            ctx.font = '700 46px "Space Grotesk", sans-serif';
+            ctx.fillText(String(total), W - PAD, y);
+
+            y += 12;
+            ctx.textAlign = 'right';
+            ctx.fillStyle = '#334155';
+            ctx.font = '500 26px "Plus Jakarta Sans", sans-serif';
+            enLines.forEach(l => { y += 40; ctx.fillText(l, W - PAD, y); });
+
+            ctx.fillStyle = '#0f172a';
+            ctx.font = '500 28px "Noto Sans Devanagari", sans-serif';
+            hiLines.forEach(l => { y += 46; ctx.fillText(l, W - PAD, y); });
+
+            return canvas.toDataURL('image/jpeg', 0.95);
+        }
+
+        let currentImage = null; // { dataUrl, blob, filename }
+
+        function dataUrlToBlob(dataUrl) {
+            const parts = dataUrl.split(',');
+            const mime = parts[0].match(/:(.*?);/)[1];
+            const bin = atob(parts[1]);
+            const arr = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+            return new Blob([arr], { type: mime });
+        }
+
+        function openImageModal() {
+            document.getElementById('img-modal-img').src = currentImage.dataUrl;
+            document.getElementById('img-modal').classList.add('active');
+        }
+
+        function closeImageModal() {
+            document.getElementById('img-modal').classList.remove('active');
+        }
+
+        // Native (Capacitor) bridge, if the APK was built with it
+        async function nativeSave(dataUrl, filename, share) {
+            // Android app bridge (APK built from the included project)
+            if (window.AndroidBridge) {
+                try {
+                    const b64 = dataUrl.split(',')[1];
+                    const r = share ? window.AndroidBridge.shareImage(b64, filename)
+                                    : window.AndroidBridge.saveImage(b64, filename);
+                    return r === 'ok';
+                } catch (e) { /* fall through */ }
+            }
+            const cap = window.Capacitor;
+            if (!cap || !cap.Plugins) return false;
+            const { Filesystem, Share } = cap.Plugins;
+            if (!Filesystem) return false;
+            try {
+                const base64 = dataUrl.split(',')[1];
+                const saved = await Filesystem.writeFile({
+                    path: filename,
+                    data: base64,
+                    directory: share ? 'CACHE' : 'DOCUMENTS'
+                });
+                if (share && Share) {
+                    await Share.share({ title: filename, url: saved.uri });
+                } else if (!share) {
+                    alert('Saved: ' + filename);
+                }
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        async function saveCurrentImage() {
+            if (!currentImage) return;
+            if (await nativeSave(currentImage.dataUrl, currentImage.filename, false)) return;
+
+            const a = document.createElement('a');
+            a.href = currentImage.dataUrl;
+            a.download = currentImage.filename;
+            a.rel = 'noopener';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            showToast('Download started. Check your notifications or Downloads.');
+        }
+
+        async function shareCurrentImage() {
+            if (!currentImage) return;
+            if (await nativeSave(currentImage.dataUrl, currentImage.filename, true)) return;
+
+            try {
+                const file = new File([currentImage.blob], currentImage.filename, { type: 'image/jpeg' });
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({ files: [file] });
+                    return;
+                }
+            } catch (e) {
+                if (e && e.name === 'AbortError') return;
+            }
+            saveCurrentImage();
+        }
+
+        function showToast(msg) {
+            let t = document.getElementById('toast');
+            if (!t) {
+                t = document.createElement('div');
+                t.id = 'toast';
+                t.style.cssText = 'position:fixed;left:50%;top:18px;transform:translateX(-50%);max-width:90%;padding:10px 16px;border-radius:12px;background:#0f172a;color:#fff;font-size:13px;font-weight:600;z-index:999;box-shadow:0 6px 20px rgba(0,0,0,.4);text-align:center;';
+                document.body.appendChild(t);
+            }
+            t.textContent = msg;
+            t.style.display = 'block';
+            clearTimeout(t._h);
+            t._h = setTimeout(() => { t.style.display = 'none'; }, 3000);
+        }
+
+        async function shareSessionImage(sessionKey, sessionNo) {
+            try {
+                const items = sessionHistoryArray.filter(i => Math.floor(i.timestamp / (10 * 60 * 1000)) === sessionKey);
+                if (!items.length) { showToast('No calculations in this session'); return; }
+
+                const dataUrl = await buildSessionImage(items);
+                if (!dataUrl) { showToast('Could not create image'); return; }
+                currentImage = {
+                    dataUrl,
+                    blob: dataUrlToBlob(dataUrl),
+                    filename: 'session-' + sessionNo + '-' + stamp(new Date(items[0].timestamp)) + '.jpg'
+                };
+                openImageModal();
+            } catch (e) {
+                showToast('Image error: ' + (e && e.message ? e.message : e));
+            }
+        }
+
+        function pad2(n) { return String(n).padStart(2, '0'); }
+        function stamp(d) {
+            return d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + '-' + pad2(d.getHours()) + pad2(d.getMinutes());
+        }
+
+        /* =====================  INPUT HANDLING  ===================== */
+        const OPERATORS = ['+', '-', '*', '/'];
+
+        function appendValue(val) {
+            if (display.value === 'Error' || display.value === '0') display.value = '';
+
+            if (OPERATORS.includes(val)) {
+                const cur = display.value;
+                if (cur === '') {
+                    // Only a leading minus is allowed on an empty display
+                    if (val !== '-') return;
+                } else if (cur === '-') {
+                    // Lone minus: only the latest operator matters
+                    display.value = val === '-' ? '-' : '';
+                    adjustDisplayFontSize();
+                    return;
+                } else {
+                    const last = cur.slice(-1);
+                    if (OPERATORS.includes(last)) {
+                        // Replace the previous operator with the newest one
+                        display.value = cur.slice(0, -1) + val;
+                        adjustDisplayFontSize();
+                        return;
+                    }
+                }
+            }
+
+            display.value += val;
+            adjustDisplayFontSize();
+        }
+
+        function appendPercent() {
+            if (display.value && display.value !== 'Error') {
+                const last = display.value.slice(-1);
+                if (last === '%') return;
+                if (OPERATORS.includes(last)) {
+                    // Newest key wins: swap trailing operator for %
+                    display.value = display.value.slice(0, -1);
+                    if (!display.value) return;
+                }
+                display.value += '%';
+                adjustDisplayFontSize();
+            }
+        }
+
+        function clearDisplay() {
+            display.value = '';
+            adjustDisplayFontSize();
+        }
+
+        function deleteLast() {
+            display.value = display.value.slice(0, -1);
+            adjustDisplayFontSize();
+        }
+
+        function clearCommandsLog() {
+            commandsLogArray = [];
+            saveState();
+            renderCommandsLog();
+        }
+
+        function deleteCommandItem(index) {
+            commandsLogArray.splice(index, 1);
+            saveState();
+            renderCommandsLog(false);
+        }
+
+        function clearAllSessionHistory() {
+            sessionHistoryArray = [];
+            saveState();
+            renderSessionBreakdown();
+        }
+
+        function parsePercentages(str) {
+            const regex = /(\d+(?:\.\d+)?)\s*([+\-])\s*(\d+(?:\.\d+)?)%/g;
+            while (regex.test(str)) {
+                regex.lastIndex = 0;
+                str = str.replace(regex, (m, base, op, percent) => base + op + ((parseFloat(base) * parseFloat(percent)) / 100));
+            }
+            return str.replace(/(\d+(?:\.\d+)?)%/g, '($1/100)');
+        }
+
+        function updateGrandTotal() {
+            let grandTotal = commandsLogArray.reduce((acc, curr) => acc + curr.result, 0);
+            if (!Number.isInteger(grandTotal)) grandTotal = parseFloat(grandTotal.toFixed(4));
+
+            historyGrandTotalDisplay.innerText = grandTotal;
+            historyGrandTotalWordsDisplay.innerText = numberToWords(grandTotal);
+            historyGrandTotalWordsHindiDisplay.innerText = numberToHindiWords(grandTotal);
+        }
+
+        /* =====================  COMMAND LOG  ===================== */
+        function currentRowH() {
+            const row = logViewport.querySelector('.history-item');
+            return (row && row.offsetHeight) || DEFAULT_ROW_H;
+        }
+
+        function visibleRows() { return isExpanded ? FULL_ROWS : NORMAL_ROWS; }
+
+        function renderCommandsLog(scrollToLatest = true) {
+            historyItemsContainer.innerHTML = '';
+
+            if (commandsLogArray.length === 0) {
+                historyItemsContainer.innerHTML = '<div class="history-empty">No commands yet</div>';
+            }
+
+            commandsLogArray.forEach((item, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'history-item';
+                itemDiv.innerHTML = `
+                    <div class="history-item-content">
+                        <span style="color: var(--text-muted);">${index + 1}.</span>
+                        <span class="expr">${String(item.rawInput).replace(/\*/g, '×')}</span>
+                    </div>
+                    <div class="history-item-right">
+                        <span>${item.result}</span>
+                        <button class="delete-item-btn" onclick="deleteCommandItem(${index})" title="Delete entry">
+                            <svg class="delete-item-icon" viewBox="0 0 24 24">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+                historyItemsContainer.appendChild(itemDiv);
+            });
+
+            if (scrollToLatest) logViewport.scrollTo({ top: logViewport.scrollHeight, behavior: 'smooth' });
+            updateElevator();
+            updateGrandTotal();
+        }
+
+        /* =====================  FULL SCREEN VIEW  ===================== */
+        function fitFullScreenRows() {
+            if (!isExpanded) return;
+            const h = logViewport.clientHeight;
+            if (h > 0) calc.style.setProperty('--row-h', Math.max(16, Math.floor(h / FULL_ROWS)) + 'px');
+        }
+
+        function setFullScreen(on) {
+            isExpanded = on;
+            calc.classList.toggle('expanded', on);
+            if (!on) calc.style.removeProperty('--row-h');
+            requestAnimationFrame(() => {
+                fitFullScreenRows();
+                logViewport.scrollTop = logViewport.scrollHeight;
+                updateElevator();
+            });
+        }
+
+        function toggleFullScreen() { setFullScreen(!isExpanded); }
+
+        /* =====================  ELEVATOR (synced with command scroll; shows when commands overflow the view)  ===================== */
+        function updateElevator() {
+            const total = commandsLogArray.length;
+            const rows = visibleRows();
+            const active = total > rows;
+            calc.classList.toggle('elev-on', active);
+            if (!active) return;
+
+            const rowH = currentRowH();
+            const first = Math.min(total, Math.round(logViewport.scrollTop / rowH) + 1);
+            const last = Math.min(total, first + rows - 1);
+            elevFloor.innerHTML = `${first}-${last}<br>/${total}`;
+
+            const maxScroll = logViewport.scrollHeight - logViewport.clientHeight;
+            const travel = Math.max(0, elevShaft.clientHeight - elevCar.offsetHeight);
+            const ratio = maxScroll > 0 ? logViewport.scrollTop / maxScroll : 0;
+            elevCar.style.top = (ratio * travel) + 'px';
+        }
+
+        function moveElevatorTo(clientY) {
+            const rect = elevShaft.getBoundingClientRect();
+            const travel = Math.max(1, rect.height - elevCar.offsetHeight);
+            const ratio = Math.min(1, Math.max(0, (clientY - rect.top - elevCar.offsetHeight / 2) / travel));
+            const maxScroll = logViewport.scrollHeight - logViewport.clientHeight;
+            logViewport.scrollTop = ratio * maxScroll;
+        }
+
+        let elevDragging = false;
+        elevShaft.addEventListener('pointerdown', e => {
+            elevDragging = true;
+            elevShaft.classList.add('dragging');
+            elevShaft.setPointerCapture(e.pointerId);
+            moveElevatorTo(e.clientY);
+        });
+        elevShaft.addEventListener('pointermove', e => { if (elevDragging) moveElevatorTo(e.clientY); });
+        const endElevDrag = () => { elevDragging = false; elevShaft.classList.remove('dragging'); };
+        elevShaft.addEventListener('pointerup', endElevDrag);
+        elevShaft.addEventListener('pointercancel', endElevDrag);
+
+        logViewport.addEventListener('scroll', updateElevator, { passive: true });
+        window.addEventListener('resize', () => { fitFullScreenRows(); updateElevator(); });
+
+        /* =====================  CALCULATE  ===================== */
+        function addCalculationEntry(rawInput, result) {
+            const entry = { rawInput, result: Number(result), timestamp: Date.now() };
+            commandsLogArray.push(entry);
+            sessionHistoryArray.push(entry);
+            saveState();
+            renderCommandsLog(true);
+        }
+
+        function calculate() {
+            try {
+                if (display.value && display.value !== 'Error') {
+                    const rawInput = display.value;
+                    if (!/^[0-9+\-*/().%\s]+$/.test(rawInput)) throw new Error('Invalid characters');
+
+                    const parsedInput = parsePercentages(rawInput);
+                    let result = Function('"use strict"; return (' + parsedInput + ')')();
+                    if (typeof result !== 'number' || isNaN(result) || !isFinite(result)) throw new Error('Invalid math');
+
+                    if (!Number.isInteger(result)) result = parseFloat(result.toFixed(6));
+                    addCalculationEntry(rawInput, result);
+                    // Command is now in the log and total; reset the display to 0 for the next entry
+                    display.value = '';
+                    adjustDisplayFontSize();
+                }
+            } catch (error) {
+                display.value = 'Error';
+                adjustDisplayFontSize();
+            }
+        }
+
+        /* =====================  SESSIONS  ===================== */
+        function openSessionModal() {
+            renderSessionBreakdown();
+            sessionModal.classList.add('active');
+        }
+
+        function closeSessionModal() {
+            sessionModal.classList.remove('active');
+        }
+
+        function deleteSession(sessionKey) {
+            sessionHistoryArray = sessionHistoryArray.filter(item => Math.floor(item.timestamp / (10 * 60 * 1000)) !== sessionKey);
+            saveState();
+            renderSessionBreakdown();
+        }
+
+        function renderSessionBreakdown() {
+            sessionListContainer.innerHTML = '';
+
+            if (sessionHistoryArray.length === 0) {
+                sessionListContainer.innerHTML = '<div style="color: var(--text-muted); text-align: center; margin-top: 30px; font-size: 0.8rem;">No session history recorded</div>';
+                return;
+            }
+
+            const sessions = {};
+            sessionHistoryArray.forEach(item => {
+                const sessionKey = Math.floor(item.timestamp / (10 * 60 * 1000));
+                if (!sessions[sessionKey]) sessions[sessionKey] = [];
+                sessions[sessionKey].push(item);
+            });
+
+            Object.keys(sessions).forEach((key, index) => {
+                const sessionItems = sessions[key];
+                let sessionSum = sessionItems.reduce((acc, curr) => acc + curr.result, 0);
+                if (!Number.isInteger(sessionSum)) sessionSum = parseFloat(sessionSum.toFixed(4));
+
+                const sessionCard = document.createElement('div');
+                sessionCard.className = 'session-card';
+
+                const itemsHTML = sessionItems.map((i, n) => `
+                    <div class="session-item">
+                        <span class="session-expr"><span class="session-serial">${n + 1}.</span>${String(i.rawInput).replace(/\*/g, '×')}</span>
+                        <span>= ${i.result}</span>
+                    </div>
+                `).join('');
+
+                sessionCard.innerHTML = `
+                    <div class="session-card-header">
+                        <span>Session ${index + 1}</span>
+                        <div class="card-actions">
+                            <span class="btn-link btn-dl" onclick="shareSessionImage(${Number(key)}, ${index + 1})" title="Share or download image">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="7 10 12 15 17 10"/>
+                                    <line x1="12" y1="15" x2="12" y2="3"/>
+                                </svg>
+                                <span>Share Image</span>
+                            </span>
+                            <button class="delete-item-btn" onclick="deleteSession(${Number(key)})" title="Delete Session">
+                                <svg class="delete-item-icon" viewBox="0 0 24 24">
+                                    <line x1="18" y1="6" x2="6" y2="18"/>
+                                    <line x1="6" y1="6" x2="18" y2="18"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    ${itemsHTML}
+                    <div class="session-total">
+                        <span>Session Auto-Sum:</span>
+                        <span>${sessionSum}</span>
+                    </div>
+                    <div class="session-words">${numberToWords(sessionSum)}</div>
+                    <div class="session-words hi">${numberToHindiWords(sessionSum)}</div>
+                `;
+                sessionListContainer.insertBefore(sessionCard, sessionListContainer.firstChild);
+            });
+        }
+
+        document.addEventListener('keydown', function (event) {
+            const key = event.key;
+            if ((key >= '0' && key <= '9') || key === '.' || key === '+' || key === '-' || key === '*' || key === '/') {
+                if (!isExpanded) appendValue(key);
+            }
+            else if (key === '%') { if (!isExpanded) appendPercent(); }
+            else if (key === 'Enter' || key === '=') { event.preventDefault(); if (!isExpanded) calculate(); }
+            else if (key === 'Backspace') { if (!isExpanded) deleteLast(); }
+            else if (key === 'Escape') {
+                if (document.getElementById('img-modal').classList.contains('active')) closeImageModal();
+                else if (sessionModal.classList.contains('active')) closeSessionModal();
+                else if (isExpanded) setFullScreen(false);
+                else clearDisplay();
+            }
+        });
+
+
+        /* ===================== APP MENU / SHARING ===================== */
+        function openAppMenu() {
+            const panel = document.getElementById('app-drawer-backdrop');
+            panel.classList.add('open');
+            panel.setAttribute('aria-hidden', 'false');
+        }
+        function closeAppMenu() {
+            const panel = document.getElementById('app-drawer-backdrop');
+            panel.classList.remove('open');
+            panel.setAttribute('aria-hidden', 'true');
+        }
+        function backdropCloseMenu(event) {
+            if (event.target.id === 'app-drawer-backdrop') closeAppMenu();
+        }
+        async function shareThisApp() {
+            const appUrl = window.location.href;
+            const shareTitle = "Jahangeer's Math Calculator";
+            const shareText = "Try this useful calculator app!";
+
+            try {
+                // If app.apk is deployed beside this HTML, share the actual APK file.
+                // Browsers require HTTPS (or localhost) and Web Share file support.
+                if (navigator.share && navigator.canShare && window.isSecureContext) {
+                    try {
+                        const apkUrl = new URL('app.apk', window.location.href);
+                        const response = await fetch(apkUrl.href, { cache: 'no-store' });
+                        if (response.ok) {
+                            const blob = await response.blob();
+                            const apkFile = new File([blob], 'app.apk', {
+                                type: 'application/vnd.android.package-archive'
+                            });
+                            if (navigator.canShare({ files: [apkFile] })) {
+                                await navigator.share({ title: shareTitle, text: shareText, files: [apkFile] });
+                                return;
+                            }
+                        }
+                    } catch (apkError) {
+                        // APK unavailable or file sharing unsupported: share the app link below.
+                    }
+                }
+
+                const shareData = { title: shareTitle, text: shareText, url: appUrl };
+                if (navigator.share) {
+                    await navigator.share(shareData);
+                } else if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(appUrl);
+                    alert('App link copied. You can now share it with anyone.');
+                } else {
+                    window.prompt('Copy this app link to share:', appUrl);
+                }
+            } catch (err) {
+                if (err && err.name !== 'AbortError') {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        try {
+                            await navigator.clipboard.writeText(appUrl);
+                            alert('App link copied. You can now share it with anyone.');
+                            return;
+                        } catch (_) { /* use manual copy fallback */ }
+                    }
+                    window.prompt('Copy this app link to share:', appUrl);
+                }
+            }
+        }
+
+        /* =====================  DAY / NIGHT THEME  ===================== */
+        // Auto: 6 AM - 6 PM = Day, 6 PM - 6 AM = Night. The button overrides it
+        // manually; the override lasts until the next automatic switch.
+        // Native app wrapper (APK / Capacitor) can colour the status bar and its icons.
+        function nativeStatusBar() {
+            try { if (window.AndroidBridge && typeof window.AndroidBridge.setStatusBar === 'function') return 'android'; } catch (e) { /* ignore */ }
+            try { if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.StatusBar) return 'capacitor'; } catch (e) { /* ignore */ }
+            return '';
+        }
+
+        function applyTheme(t) {
+            const light = t === 'light';
+            const native = nativeStatusBar();
+            // Keep the full viewport and browser status-bar surface black at night.
+            const bar = light ? '#ffffff' : '#000000';
+            const root = document.documentElement;
+            root.setAttribute('data-theme', light ? 'light' : 'dark');
+            root.classList.toggle('native-bar', !!native);
+
+            const tc = document.querySelector('meta[name="theme-color"]');
+            if (tc) tc.setAttribute('content', bar);
+            const cs = document.querySelector('meta[name="color-scheme"]');
+            if (cs) cs.setAttribute('content', light ? 'light' : 'dark');
+
+            try {
+                if (native === 'android') {
+                    // AndroidBridge's style argument describes icon brightness:
+                    // light icons on the dark status-bar background, dark icons on white.
+                    window.AndroidBridge.setStatusBar(light ? 'dark' : 'light', bar);
+                }
+            } catch (e) { /* ignore */ }
+            try {
+                if (native === 'capacitor') {
+                    const SB = window.Capacitor.Plugins.StatusBar;
+                    SB.setStyle({ style: light ? 'LIGHT' : 'DARK' });
+                    SB.setBackgroundColor({ color: bar });
+                }
+            } catch (e) { /* ignore */ }
+        }
+
+        function toggleTheme() {
+            const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+            const next = isLight ? 'dark' : 'light';
+            try {
+                if (next === CalcTheme.auto()) localStorage.removeItem(CalcTheme.KEY);
+                else localStorage.setItem(CalcTheme.KEY, JSON.stringify({ theme: next, slot: CalcTheme.slot() }));
+            } catch (e) { /* ignore */ }
+            applyTheme(next);
+            const b = document.getElementById('theme-btn');
+            b.classList.remove('spin');
+            void b.offsetWidth;
+            b.classList.add('spin');
+        }
+
+        function syncTheme() {
+            const t = CalcTheme.resolve();
+            if (document.documentElement.getAttribute('data-theme') !== t) applyTheme(t);
+        }
+
+        applyTheme(CalcTheme.resolve());
+        setInterval(syncTheme, 30000);
+        document.addEventListener('visibilitychange', function () { if (!document.hidden) syncTheme(); });
+        window.addEventListener('focus', syncTheme);
+
+        // Initial render: jump straight to the latest commands
+        renderCommandsLog(false);
+        logViewport.scrollTop = logViewport.scrollHeight;
+        updateElevator();
+    </script>
+</body>
+</html>
